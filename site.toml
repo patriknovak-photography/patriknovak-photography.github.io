@@ -1,0 +1,56 @@
+# ─────────────────────────────────────────────────────────────
+#  Nastavení webu. Po každé změně spusť sestavit.bat.
+#  Text piš mezi uvozovky. Řádky začínající # jsou poznámky.
+# ─────────────────────────────────────────────────────────────
+
+name = "Patrik Novák"
+
+# Adresa hotového webu, bez lomítka na konci.
+# Vyplň, až budeš znát adresu (např. "https://patriknovak.pages.dev").
+# Bez ní se nevytvoří sitemap.xml ani náhledy pro sdílení na sítích.
+base_url = ""
+
+# Přístupový klíč pro kontaktní formulář ze služby https://web3forms.com
+# (zadáš tam svůj e-mail, klíč ti přijde poštou). Bez klíče formulář neodesílá.
+web3forms_key = "38bf341b-d0ff-4fad-9192-b0bd1b12e669"
+
+# Ztíží stahování fotek (vypne pravé tlačítko a přetažení). Úplná ochrana to není.
+protect_images = true
+
+# Fotografie, které se střídají na úvodní stránce.
+# Za svislítkem může být bod, který má zůstat vidět při ořezu (vodorovně svisle).
+hero = [
+  "02-na-hrane-dne/02_D72_1127-Edit.jpg | 70% 55%",
+  "03-les/09_D72_6194-Pano-3.jpg | 40% 50%",
+  "01-ticho/03_D72_8634.jpg | 66% 50%",
+  "02-na-hrane-dne/09_D72_7073-Pano-Edit-2.jpg | 50% 50%",
+  "02-na-hrane-dne/16_D724444-Pano.jpg | 42% 62%",
+  "02-na-hrane-dne/11_D722935.jpg | 60% 50%",
+]
+
+# Fotografie na stránce O mně.
+about_image = "01-ticho/01_Posed-II.jpg"
+
+
+[cs]
+tagline = "Krajina, les a světlo"
+description = "Patrik Novák – fotografie krajiny, lesa, zimy a nočního města."
+about = """
+Fotografuji krajinu ve chvílích, kdy ztichne: za svítání, v mlze, v mrazu a po setmění.
+
+Hledám v ní jednoduchost. Osamělý strom v poli, posed na obzoru, světlo mezi kmeny.
+"""
+contact_intro = "Napište mi, odpovím co nejdřív."
+prints = "Fotografie nabízím jako autorské tisky a k licencování. Napište mi, kterou máte na mysli, a domluvíme formát i podmínky."
+
+
+[en]
+tagline = "Landscape, forest and light"
+description = "Patrik Novák – photographs of landscape, forest, winter and the city at night."
+about = """
+I photograph the landscape in its quiet hours: at dawn, in fog, in frost and after dark.
+
+I look for simplicity. A lone tree in a field, a hunting stand on the horizon, light between the trunks.
+"""
+contact_intro = "Write to me and I will reply as soon as I can."
+prints = "The photographs are available as prints and for licensing. Tell me which one you have in mind and we will agree on the format and terms."

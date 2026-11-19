@@ -1,0 +1,7 @@
+title_cs = "Ticho"
+title_en = "Silence"
+slug_en  = "silence"
+intro_cs = "Osamělé stromy, mlha a prázdná pole."
+intro_en = "Lone trees, fog and empty fields."
+theme    = "light"          # light = světlé pozadí, dark = tmavé
+cover    = "02_D72_6613.jpg"

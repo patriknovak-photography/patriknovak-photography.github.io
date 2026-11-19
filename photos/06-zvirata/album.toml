@@ -1,0 +1,7 @@
+title_cs = "Zvířata"
+title_en = "Animals"
+slug_en  = "animals"
+intro_cs = "Portréty zvířat."
+intro_en = "Animal portraits."
+theme    = "dark"
+cover    = "01_D723311.jpg"

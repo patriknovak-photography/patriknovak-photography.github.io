@@ -1,0 +1,10 @@
+# Pracovní kopie fotek ve velkém rozlišení se nezveřejňují (web používá jen docs/).
+photos/**/*.jpg
+photos/**/*.jpeg
+photos/**/*.png
+photos/**/*.tif
+photos/**/*.tiff
+__pycache__/
+*.pyc
+Thumbs.db
+desktop.ini
