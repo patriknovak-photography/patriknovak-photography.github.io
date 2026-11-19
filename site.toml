@@ -8,7 +8,7 @@ name = "Patrik Novák"
 # Adresa hotového webu, bez lomítka na konci.
 # Vyplň, až budeš znát adresu (např. "https://patriknovak.pages.dev").
 # Bez ní se nevytvoří sitemap.xml ani náhledy pro sdílení na sítích.
-base_url = ""
+base_url = "https://patriknovak-photography.github.io"
 
 # Přístupový klíč pro kontaktní formulář ze služby https://web3forms.com
 # (zadáš tam svůj e-mail, klíč ti přijde poštou). Bez klíče formulář neodesílá.

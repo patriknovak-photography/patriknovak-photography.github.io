@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://patriknovak-photography.github.io/sitemap.xml
