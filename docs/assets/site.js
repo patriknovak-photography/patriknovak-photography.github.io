@@ -56,13 +56,13 @@
       return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>';
     };
     lb.innerHTML =
-      '<div class="stage"><img alt="" draggable="false"></div>' +
+      '<div class="stage"></div>' +
       '<button class="nav prev" type="button" aria-label="' + (T.prev || "") + '">' + arrow("M15 4l-8 8 8 8") + "</button>" +
       '<button class="nav next" type="button" aria-label="' + (T.next || "") + '">' + arrow("M9 4l8 8-8 8") + "</button>" +
       '<button class="x" type="button" aria-label="' + (T.close || "") + '">' + arrow("M5 5l14 14M19 5L5 19") + "</button>" +
       '<div class="count" aria-live="polite"></div>';
     doc.body.appendChild(lb);
-    var stage = lb.querySelector(".stage"), pic = stage.querySelector("img"), count = lb.querySelector(".count");
+    var stage = lb.querySelector(".stage"), count = lb.querySelector(".count");
     var cur = -1, opener = null;
 
     var fit = function (a) {
@@ -71,21 +71,24 @@
     };
     var show = function (i, quiet) {
       cur = (i + links.length) % links.length;
-      var a = links[cur];
-      pic.classList.remove("ready");
-      var fresh = new Image();
+      var a = links[cur], mine = cur;
+      var old = stage.querySelector("img");
+      if (old) old.classList.remove("ready");
+      // Každá fotka dostane vlastní <img>; staré se odstraní z dokumentu.
+      // Přepisování srcset na jednom prvku nechávalo v Safari (iPad) starou fotku viset pod novou.
+      var fresh = doc.createElement("img");
+      fresh.alt = a.querySelector("img").alt;
+      fresh.draggable = false;
+      fresh.width = +a.dataset.w; fresh.height = +a.dataset.h;
       fresh.sizes = fit(a) + "px";
       fresh.srcset = a.dataset.m + " " + a.dataset.mw + "w, " + a.href + " " + a.dataset.w + "w";
       fresh.src = a.href;
-      var mine = cur;
       var put = function () {
-        if (mine !== cur) return;
-        pic.sizes = fresh.sizes; pic.srcset = fresh.srcset; pic.src = fresh.currentSrc || fresh.src;
-        pic.alt = a.querySelector("img").alt;
-        pic.width = +a.dataset.w; pic.height = +a.dataset.h;
-        requestAnimationFrame(function () { pic.classList.add("ready"); });
+        if (mine !== cur || !lb.classList.contains("open")) return;
+        stage.replaceChildren ? stage.replaceChildren(fresh) : (stage.innerHTML = "", stage.appendChild(fresh));
+        requestAnimationFrame(function () { requestAnimationFrame(function () { fresh.classList.add("ready"); }); });
       };
-      if (fresh.decode) fresh.decode().then(put, put); else fresh.onload = put;
+      if (fresh.decode) fresh.decode().then(put, put); else { fresh.onload = put; fresh.onerror = put; }
       count.textContent = (cur + 1) + " / " + links.length;
       if (!quiet) history.replaceState(null, "", "#" + (cur + 1));
       var n = links[(cur + 1) % links.length], pre = new Image();
@@ -100,7 +103,7 @@
     };
     var close = function () {
       lb.classList.remove("show"); doc.body.classList.remove("locked");
-      setTimeout(function () { lb.classList.remove("open"); pic.removeAttribute("srcset"); pic.removeAttribute("src"); }, calm ? 0 : 300);
+      setTimeout(function () { if (cur < 0) { lb.classList.remove("open"); stage.innerHTML = ""; } }, calm ? 0 : 300);
       history.replaceState(null, "", location.pathname + location.search);
       var a = links[cur];
       if (a) { a.focus({ preventScroll: true }); a.scrollIntoView({ block: "nearest" }); }

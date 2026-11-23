@@ -20,12 +20,12 @@ protect_images = true
 # Fotografie, které se střídají na úvodní stránce.
 # Za svislítkem může být bod, který má zůstat vidět při ořezu (vodorovně svisle).
 hero = [
-  "02-na-hrane-dne/02_D72_1127-Edit.jpg | 70% 55%",
-  "03-les/09_D72_6194-Pano-3.jpg | 40% 50%",
-  "01-ticho/03_D72_8634.jpg | 66% 50%",
-  "02-na-hrane-dne/09_D72_7073-Pano-Edit-2.jpg | 50% 50%",
-  "02-na-hrane-dne/16_D724444-Pano.jpg | 42% 62%",
+  "01-ticho/16_D72_8227.jpg | 60% 55%",
+  "01-ticho/20_D72_9933-Edit.jpg | 50% 50%",
   "02-na-hrane-dne/11_D722935.jpg | 60% 50%",
+  "03-les/10_D72_6263-Pano-Edit-2.jpg | 40% 50%",
+  "03-les/27_D721954.jpg | 50% 50%",
+  "02-na-hrane-dne/04_D72_1127-Edit.jpg | 70% 55%",
 ]
 
 # Fotografie na stránce O mně.
@@ -33,10 +33,14 @@ about_image = "01-ticho/01_Posed-II.jpg"
 
 
 [cs]
-tagline = "Krajina, les a světlo"
-description = "Patrik Novák – fotografie krajiny, lesa, zimy a nočního města."
+tagline = "Stejná krajina, jiný pohled."
+# Druhý řádek pod jménem na úvodní stránce. "" = nezobrazovat.
+slogan = ""
+description = "Patrik Novák – fotografie krajiny, lesa, zimy a architektury."
 about = """
-Fotografuji krajinu ve chvílích, kdy ztichne: za svítání, v mlze, v mrazu a po setmění.
+Fotografuji krajinu tak, jak ji vnímám. Nejen to, co je vidět.
+
+Nejraději ve chvílích, kdy ztichne: za svítání, v mlze, v mrazu a po setmění.
 
 Hledám v ní jednoduchost. Osamělý strom v poli, posed na obzoru, světlo mezi kmeny.
 """
@@ -45,12 +49,60 @@ prints = "Fotografie nabízím jako autorské tisky a k licencování. Napište 
 
 
 [en]
-tagline = "Landscape, forest and light"
-description = "Patrik Novák – photographs of landscape, forest, winter and the city at night."
+tagline = "The same landscape, a different view."
+slogan = ""
+description = "Patrik Novák – photographs of landscape, forest, winter and architecture."
 about = """
-I photograph the landscape in its quiet hours: at dawn, in fog, in frost and after dark.
+I photograph the landscape as I perceive it. Not only what can be seen.
+
+Most of all in its quiet hours: at dawn, in fog, in frost and after dark.
 
 I look for simplicity. A lone tree in a field, a hunting stand on the horizon, light between the trunks.
 """
 contact_intro = "Write to me and I will reply as soon as I can."
 prints = "The photographs are available as prints and for licensing. Tell me which one you have in mind and we will agree on the format and terms."
+
+
+# ─────────────────────────────────────────────────────────────
+#  Watermark ve fotkách na webu. Originály ve photos/ se nemění,
+#  watermark se vkládá jen do zmenšených kopií v docs/img/.
+#  Po změně čehokoli v tomto oddílu se dotčené fotky vygenerují znovu.
+# ─────────────────────────────────────────────────────────────
+[watermark]
+enabled = true         # true = zapnuto
+# Kam se watermark vkládá: "hero" = jen do střídajících se fotek na úvodní stránce,
+# "all" = do všech fotek v albech.
+scope = "hero"
+
+# Monogram: watermark-monogram-bila-2000.png (+ file_small = watermark-znacka-bila-2000.png, width = 12)
+# Tvar watermarku: PNG s průhledností (barva souboru se nepoužije, bere se jen tvar).
+file = "src/watermark/watermark-06-quattrocento-bila-2000.png"
+# Zjednodušená verze pro malé velikosti (bez jména). "" = nepoužívat.
+file_small = ""
+small_below = 200      # px – když by watermark vyšel užší, použije se file_small
+
+# Poloha: top-left, top-right, bottom-left, bottom-right, top-center, bottom-center, center
+position = "bottom-right"
+width = 16             # šířka watermarku v % šířky fotky
+max_height = 22        # nejvýš % výšky fotky (strop pro panoramata)
+margin = 2.5           # odstup od okraje v % kratší strany fotky
+opacity = 65           # krytí v % (100 = plné)
+
+# Barva: "auto" = podle jasu místa pod watermarkem, nebo "light" / "dark" vždy.
+color = "auto"
+threshold = 55         # jas v % – nad ním se použije tmavá verze
+light = "#ffffff"
+dark = "#111111"
+
+# Které velikosti dostanou watermark: "l" velká (prohlížení), "m" střední, "t" náhledy v mřížce.
+sizes = ["m", "l"]
+
+# Fotky bez watermarku (album/soubor):
+skip = [
+  # "01-ticho/03_D72_8634.jpg",
+]
+
+# Jiná poloha nebo barva pro konkrétní fotky, např. když watermark leží na hlavním motivu.
+[watermark.place]
+"03-les/08_D72_6194-Pano-3.jpg" = "bottom-left"
+"04-zima/03_D72_7838-2.jpg" = "bottom-left"

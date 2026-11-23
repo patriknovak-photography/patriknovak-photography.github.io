@@ -13,6 +13,7 @@ Stránky se ze složky `photos/` a souboru `site.toml` sestavují skriptem `buil
 | `site.toml` | Jméno, texty (O mně, Kontakt), úvodní fotky, klíč formuláře, adresa webu. |
 | `docs/` | Hotový web. Needituj ručně, při sestavení se přepisuje. |
 | `src/` | Vzhled (`style.css`), chování (`site.js`), písmo Lora. |
+| `src/watermark/` | Soubory watermarku (monogram PN), zdroje a generátor v `src/watermark/zdroj/`. |
 | `nahled.bat` | Sestaví web a otevře náhled v prohlížeči. |
 | `sestavit.bat` | Jen sestaví web. |
 | `zverejnit.bat` | Sestaví web a odešle změny na GitHub. |
@@ -42,6 +43,38 @@ převede do sRGB a odstraní EXIF (včetně GPS).
 procenta říkají, který bod fotky má zůstat vidět, když se na úzkém displeji ořízne.
 
 Po každé změně spusť `nahled.bat` (nebo `sestavit.bat`).
+
+## Watermark
+
+Na web se dá automaticky přidat watermark (podpis Patrik Novák, PHOTOGRAPHY).
+Originály ve `photos/` zůstávají beze změny.
+
+**Kde se zobrazí:** `scope = "hero"` – jen na úvodní stránce, pevně vpravo dole přes
+střídající se fotky (nikdy se neořízne); `scope = "all"` – vloží se do fotek ve všech albech.
+
+**Zapnutí:** v `site.toml`, oddíl `[watermark]`, nastav `enabled = true` a spusť `nahled.bat`.
+Fotky se jednou vygenerují znovu, další sestavení už jsou rychlá. Vypnutí: `enabled = false`.
+
+| Nastavení | Význam |
+|---|---|
+| `scope` | `hero` = jen úvodní stránka, `all` = všechny fotky v albech |
+| `position` | `bottom-right`, `bottom-left`, `top-right`, `top-left`, `bottom-center`, `top-center`, `center` |
+| `width` | šířka v % šířky fotky (výchozí 12) |
+| `max_height` | strop v % výšky fotky, aby watermark nebyl obří u panoramat |
+| `margin` | odstup od okraje v % kratší strany |
+| `opacity` | krytí v % (výchozí 60) |
+| `color` | `auto` = bílá nebo tmavá podle jasu místa pod watermarkem; `light` / `dark` = vždy stejná |
+| `threshold` | hranice jasu pro `auto` (vyšší číslo = častěji bílá) |
+| `file_small`, `small_below` | pod danou šířkou (px) se použije verze bez jména, aby nebyl drobný nečitelný text |
+| `sizes` | které velikosti: `l` velká (prohlížení), `m` střední, `t` náhledy v mřížce |
+| `skip` | fotky bez watermarku, zápis `"album/soubor.jpg"` |
+| `[watermark.place]` | jiná poloha nebo barva pro jednu fotku, např. `"04-zima/01_D72_7838-2.jpg" = "bottom-left light"` |
+
+Při sestavení se vypíše, kolik fotek dostalo světlý a kolik tmavý watermark.
+Úvodní fotky se na úzkém displeji ořezávají, watermark v rohu tam proto nemusí být vidět celý.
+
+**Nový vzhled watermarku:** ve složce `src/watermark/zdroj/` spusť `python generuj_watermark.py --out ..`
+(potřebuje `pip install fonttools`). Rozměry a tloušťky jsou na začátku skriptu.
 
 ## Kontaktní formulář
 

@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 Thumbs.db
 desktop.ini
+# Pracovní složka pro jednorázové úpravy fotek – nezveřejňuje se.
+_uprava/
+_uprava2/

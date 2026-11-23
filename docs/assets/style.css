@@ -1,6 +1,13 @@
 /* Patrik Novák – fotografie. Jedno písmo (Lora), dvě nálady: půda (tmavá) a mlha (světlá). */
 
 @font-face {
+  font-family: "Cinzel";
+  src: url("fonts/cinzel.woff") format("woff");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: "Lora";
   src: url("fonts/lora.woff") format("woff");
   font-weight: 400 700;
@@ -116,12 +123,22 @@ p { margin: 0 0 1.1em; }
   position: absolute; z-index: 2; left: var(--pad); right: var(--pad); bottom: clamp(1.6rem, 6vh, 4rem);
 }
 .hero h1 {
-  font-size: clamp(2.5rem, 7.2vw, 5.6rem); line-height: 1.02; letter-spacing: -0.015em; font-weight: 400;
+  font-family: "Cinzel", "Lora", Georgia, serif;
+  font-size: clamp(2.1rem, 5.6vw, 4.4rem); line-height: 1.08; letter-spacing: 0.12em; font-weight: 400;
   text-shadow: 0 1px 30px rgba(0, 0, 0, 0.35);
 }
 .hero .tag {
   margin: 0.7rem 0 0 0.15em; font-style: italic; font-size: clamp(1.05rem, 1.7vw, 1.35rem);
   color: rgba(243, 243, 240, 0.9);
+}
+.hero .wm {
+  position: absolute; z-index: 2; right: var(--pad); bottom: clamp(1.6rem, 6vh, 4rem);
+  width: clamp(143px, 18.2vw, 299px); height: auto; pointer-events: none;
+  filter: drop-shadow(0 1px 6px rgba(0, 0, 0, 0.35));
+}
+.hero .slogan {
+  margin: 0.35rem 0 0 0.15em; font-size: clamp(0.95rem, 1.35vw, 1.1rem); letter-spacing: 0.02em;
+  color: rgba(243, 243, 240, 0.72);
 }
 
 /* ── alba na úvodní stránce: zavěšená jako na stěně ─────── */
@@ -266,6 +283,7 @@ body.locked { overflow: hidden; }
   .head { padding-top: 1.1rem; }
   .head nav { gap: 0.2rem 1.25rem; }
   .grid { --row: 44vw; }
+  .hero .wm { width: 120px; }
   .wall { gap: 3rem 0; }
   .wall .piece, .wall .piece.landscape { width: 100%; }
   .wall .piece.portrait, .wall .piece.square { width: 74%; }

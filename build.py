@@ -141,11 +141,181 @@ def fitted(im, box: int):
     return out.filter(ImageFilter.UnsharpMask(radius=0.6, percent=30, threshold=1))
 
 
+# ── watermark ───────────────────────────────────────────────────────────────
+
+WM_POSITIONS = ("top-left", "top-right", "bottom-left", "bottom-right", "bottom-center", "top-center", "center")
+
+
+class Watermark:
+    """Vkládá watermark do zmenšených fotek. Nastavení je v site.toml, oddíl [watermark]."""
+
+    def __init__(self, c: dict):
+        def num(name: str, default: float, lo: float, hi: float) -> float:
+            v = c.get(name, default)
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or not lo <= v <= hi:
+                fail(f"site.toml [watermark]: {name} musí být číslo {lo}–{hi} (teď {v!r}).")
+            return float(v)
+
+        def color(name: str, default: str) -> tuple[int, int, int]:
+            v = str(c.get(name, default)).strip()
+            if not re.fullmatch(r"#[0-9a-fA-F]{6}", v):
+                fail(f"site.toml [watermark]: {name} musí být barva ve tvaru \"#rrggbb\" (teď {v!r}).")
+            return tuple(int(v[i:i + 2], 16) for i in (1, 3, 5))  # type: ignore[return-value]
+
+        self.scope = str(c.get("scope", "all")).strip().lower()
+        if self.scope not in ("all", "hero"):
+            fail(f"site.toml [watermark]: scope musí být \"all\" (všechny fotky) nebo \"hero\" (jen úvodní fotky) (teď {self.scope!r}).")
+        self.position = self._position(str(c.get("position", "bottom-right")), "position")
+        self.color = str(c.get("color", "auto")).strip().lower()
+        if self.color not in ("auto", "light", "dark"):
+            fail(f"site.toml [watermark]: color musí být \"auto\", \"light\" nebo \"dark\" (teď {self.color!r}).")
+        self.width = num("width", 12, 2, 60) / 100
+        self.max_height = num("max_height", 22, 2, 80) / 100
+        self.margin = num("margin", 2.5, 0, 20) / 100
+        self.opacity = num("opacity", 60, 5, 100) / 100
+        self.threshold = num("threshold", 55, 0, 100) / 100
+        self.small_below = num("small_below", 200, 0, 5000)
+        self.rgb = {"light": color("light", "#ffffff"), "dark": color("dark", "#111111")}
+        self.sizes = set(c.get("sizes", ["m", "l"]))
+        if not self.sizes or not self.sizes <= set("tml"):
+            fail('site.toml [watermark]: sizes smí obsahovat jen "t", "m", "l" (např. ["m", "l"]).')
+        self.skip = {str(s).strip().replace("\\", "/") for s in c.get("skip", [])}
+        self.place: dict[str, tuple[str | None, str | None]] = {}
+        for k, v in (c.get("place") or {}).items():
+            pos = col = None
+            for word in str(v).lower().split():
+                if word in WM_POSITIONS:
+                    pos = word
+                elif word in ("light", "dark", "auto"):
+                    col = word
+                else:
+                    fail(f"site.toml [watermark.place]: u {k!r} neznám {word!r}. "
+                         f"Povoleno: {', '.join(WM_POSITIONS)}, light, dark, auto.")
+            self.place[k.strip().replace("\\", "/")] = (pos, col)
+        self.files = {"full": self._file(c.get("file", "")), "small": None}
+        if str(c.get("file_small", "")).strip():
+            self.files["small"] = self._file(c["file_small"])
+        self._masks: dict = {}
+        h = hashlib.md5(json.dumps({k: v for k, v in c.items() if k not in ("skip", "place", "enabled")},
+                                   sort_keys=True, default=str).encode())
+        for p in self.files.values():
+            if p:
+                h.update(p.read_bytes())
+        self.sig = h.hexdigest()[:10]
+
+    @staticmethod
+    def _position(v: str, what: str) -> str:
+        v = v.strip().lower()
+        if v not in WM_POSITIONS:
+            fail(f"site.toml [watermark]: {what} musí být jedno z: {', '.join(WM_POSITIONS)} (teď {v!r}).")
+        return v
+
+    @staticmethod
+    def _file(rel: str) -> Path:
+        p = (ROOT / str(rel).strip()).resolve()
+        if not str(rel).strip() or not p.is_file():
+            fail(f"site.toml [watermark]: soubor watermarku {rel!r} neexistuje (cesta je relativní ke složce webu).")
+        return p
+
+    def signature(self, key: str) -> str:
+        """Otisk nastavení pro jednu fotku – při změně se fotka vygeneruje znovu."""
+        if key in self.skip:
+            return "-"
+        pos, col = self.place.get(key, (None, None))
+        return f"{self.sig}:{pos or ''}:{col or ''}"
+
+    def _shape(self, kind: str):
+        """Tvar watermarku (jen průhlednost), oříznutý na obsah. Načte se jednou."""
+        from PIL import Image
+        if kind not in self._masks:
+            try:
+                im = Image.open(self.files[kind])
+                im.load()
+            except Exception as e:
+                fail(f"Soubor watermarku {self.files[kind]} nejde načíst: {e}")
+            if "A" in im.getbands():
+                a = im.getchannel("A")
+            elif im.mode == "LA" or "transparency" in im.info:
+                a = im.convert("RGBA").getchannel("A")
+            else:
+                fail(f"Soubor watermarku {self.files[kind].name} nemá průhlednost. Použij PNG s průhledným pozadím.")
+            bbox = a.getbbox()
+            if not bbox:
+                fail(f"Soubor watermarku {self.files[kind].name} je celý průhledný.")
+            self._masks[kind] = a.crop(bbox)
+        return self._masks[kind]
+
+    def _mask(self, kind: str, width: int, height: int):
+        from PIL import Image
+        return self._shape(kind).resize((width, height), Image.LANCZOS, reducing_gap=3.0)
+
+    def layout(self, size: tuple[int, int], key: str):
+        """-> (druh, šířka, x, y, výška) pro fotku dané velikosti."""
+        w, h = size
+        s = self._shape("full")
+        ar = s.size[1] / s.size[0]
+        ww = min(w * self.width, h * self.max_height / ar)
+        kind = "small" if self.files["small"] and ww < self.small_below else "full"
+        if kind == "small":
+            s = self._shape("small")
+            ar = s.size[1] / s.size[0]
+            ww = min(ww, h * self.max_height / ar)
+        ww = max(8, round(ww))
+        wh = max(1, round(ww * ar))
+        m = round(min(w, h) * self.margin)
+        pos = self.place.get(key, (None, None))[0] or self.position
+        x = {"left": m, "right": w - ww - m}.get(pos.split("-")[-1], (w - ww) // 2)
+        y = {"top": m, "bottom": h - wh - m}.get(pos.split("-")[0], (h - wh) // 2)
+        return kind, ww, x, y, wh
+
+    def pick_color(self, im, key: str) -> str:
+        """Bílá nebo černá verze podle jasu místa, kam watermark přijde."""
+        from PIL import ImageStat
+        col = self.place.get(key, (None, None))[1] or self.color
+        if col != "auto":
+            return col
+        _, ww, x, y, wh = self.layout(im.size, key)
+        pad = round(ww * 0.15)
+        box = (max(0, x - pad), max(0, y - pad), min(im.size[0], x + ww + pad), min(im.size[1], y + wh + pad))
+        lum = ImageStat.Stat(im.crop(box).convert("L")).mean[0] / 255
+        return "dark" if lum > self.threshold else "light"
+
+    def overlay_png(self) -> bytes:
+        """Bílý watermark s průhledností (včetně krytí z nastavení) pro úvodní stránku."""
+        from PIL import Image
+        m = self._shape("full")
+        w = 720
+        m = m.resize((w, max(1, round(m.size[1] * w / m.size[0]))), Image.LANCZOS, reducing_gap=3.0)
+        if self.opacity < 1:
+            m = m.point(lambda v: round(v * self.opacity))
+        out = Image.new("RGBA", m.size, self.rgb["light"] + (0,))
+        out.putalpha(m)
+        buf = io.BytesIO()
+        out.save(buf, "PNG", optimize=True)
+        return buf.getvalue()
+
+    def apply(self, im, key: str, col: str):
+        from PIL import Image
+        kind, ww, x, y, wh = self.layout(im.size, key)
+        mask = self._mask(kind, ww, wh)
+        if self.opacity < 1:
+            mask = mask.point(lambda v: round(v * self.opacity))
+        out = im.copy()
+        out.paste(Image.new("RGB", mask.size, self.rgb[col]), (x, y), mask)
+        return out
+
+
+WATERMARK: Watermark | None = None
+
+
 def make_derivatives(src: Path, base: Path, author: str, cache: dict, key: str) -> dict:
     """Vytvoří náhled (-t), střední (-m) a velkou (-l) verzi. Hotové a nezměněné přeskočí."""
     from PIL import Image, ImageFilter, ImageStat
     st = src.stat()
+    wm = WATERMARK if WATERMARK and WATERMARK.scope == "all" and key not in WATERMARK.skip else None
     sig = [st.st_size, VERSION]  # velikost souboru stačí; čas změny se při kopírování a rozbalování mění
+    if wm:
+        sig.append(wm.signature(key))
     names = {k: base.with_name(base.name + f"-{k}.jpg") for k in "tml"}
     old = cache.get(key)
     if old and old.get("sig") == sig and all(p.exists() for p in names.values()):
@@ -159,12 +329,18 @@ def make_derivatives(src: Path, base: Path, author: str, cache: dict, key: str) 
     th = round(tw / ar)
     thumb = large.resize((tw, th), Image.LANCZOS, reducing_gap=3.0) if th < large.size[1] else large
     thumb = thumb.filter(ImageFilter.UnsharpMask(radius=0.5, percent=40, threshold=1))
-    save_jpeg(large, names["l"], LARGE_Q, author)
-    save_jpeg(medium, names["m"], MEDIUM_Q, author)
-    save_jpeg(thumb, names["t"], THUMB_Q, author)
     r, g, b = (round(v) for v in ImageStat.Stat(thumb.resize((16, 16))).mean[:3])
+    out = {"l": large, "m": medium, "t": thumb}
+    wm_color = None
+    if wm:
+        wm_color = wm.pick_color(large, key)  # jedna barva pro všechny velikosti
+        for s in wm.sizes:
+            out[s] = wm.apply(out[s], key, wm_color)
+    save_jpeg(out["l"], names["l"], LARGE_Q, author)
+    save_jpeg(out["m"], names["m"], MEDIUM_Q, author)
+    save_jpeg(out["t"], names["t"], THUMB_Q, author)
     info = dict(sig=sig, w=large.size[0], h=large.size[1], mw=medium.size[0], mh=medium.size[1],
-                tw=thumb.size[0], th=thumb.size[1], color=f"#{r:02x}{g:02x}{b:02x}")
+                tw=thumb.size[0], th=thumb.size[1], color=f"#{r:02x}{g:02x}{b:02x}", wm=wm_color)
     cache[key] = info
     return info
 
@@ -271,6 +447,8 @@ class Site:
                          f'<meta property="og:image:width" content="{og["mw"]}">\n<meta property="og:image:height" content="{og["mh"]}">\n'
                          '<meta name="twitter:card" content="summary_large_image">\n')
         protect = ' class="protect"' if cfg.get("protect_images", True) else ""
+        # Na úvodní stránce je jméno velkým písmem přes fotografii, v záhlaví by se opakovalo.
+        brand = '<span class="name" aria-hidden="true"></span>' if kind == "home" else f'<a class="name" href="{up}{home}">{esc(cfg["name"])}</a>'
         color = "#131514" if theme == "dark" else "#e7e9e8"
         doc = f"""<!doctype html>
 <html lang="{lang}" data-theme="{theme}"{protect}>
@@ -288,7 +466,7 @@ class Site:
 <body>
 <a class="skip" href="#obsah">{esc(ui['skip'])}</a>
 <header class="head{' over' if over else ''}">
-<a class="name" href="{up}{home}">{esc(cfg['name'])}</a>
+{brand}
 <nav>{links}<a class="lang" href="{up}{other}" lang="{ui['other_code']}" hreflang="{ui['other_code']}">{esc(ui['other'])}</a></nav>
 </header>
 <main id="obsah">
@@ -344,9 +522,12 @@ class Site:
                 f'sizes="(max-width: 760px) 100vw, 56vw" width="{c["w"]}" height="{c["h"]}" alt="" loading="lazy" decoding="async" draggable="false"></div>'
                 f'<div class="label"><span class="t">{esc(a["title"][lang])}</span>'
                 f'<span class="n">{count_label(len(a["photos"]), lang)}</span></div></a>')
+        wm = ('<img class="wm" src="{UP}assets/watermark.png" alt="" aria-hidden="true" draggable="false">\n'
+              if getattr(self, "wm_overlay", False) else "")
+        slogan = f'<p class="slogan">{esc(t["slogan"])}</p>' if str(t.get("slogan", "")).strip() else ""
         body = f"""<section class="hero">
 {chr(10).join(slides)}
-<div class="sign"><h1>{esc(cfg['name'])}</h1><p class="tag">{esc(t.get('tagline', ''))}</p></div>
+{wm}<div class="sign"><h1>{esc(cfg['name'])}</h1><p class="tag">{esc(t.get('tagline', ''))}</p>{slogan}</div>
 </section>
 <section class="wall" id="alba" aria-label="{esc(UI[lang]['albums'])}">
 {chr(10).join(wall)}
@@ -471,12 +652,33 @@ def build(clean: bool = False) -> None:
             old = {}
     cache = old.get("images", {})
 
-    print("Fotografie:")
+    global WATERMARK
+    wcfg = cfg.get("watermark") or {}
+    if not isinstance(wcfg, dict):
+        fail("V site.toml musí být watermark oddíl [watermark].")
+    WATERMARK = Watermark(wcfg) if wcfg.get("enabled") else None
+
+    hero_only = bool(WATERMARK and WATERMARK.scope == "hero")
+    print("Fotografie:" + ((" (watermark jen v úvodních fotkách)" if hero_only else " (s watermarkem)") if WATERMARK else ""))
     albums = load_albums(cfg, cache)
+    if hero_only:
+        print("  watermark: jen na úvodní stránce, přes střídající se fotky")
+    elif WATERMARK:
+        n = {"light": 0, "dark": 0}
+        for a in albums:
+            for p in a["photos"]:
+                if p.get("wm") in n:
+                    n[p["wm"]] += 1
+        print(f"  watermark: {n['light']}× světlý, {n['dark']}× tmavý, "
+              f"{sum(1 for a in albums for p in a['photos'] if not p.get('wm'))}× bez watermarku")
+        missing = WATERMARK.skip.union(WATERMARK.place) - {p["key"] for a in albums for p in a["photos"]}
+        for k in sorted(missing):
+            print(f"    ! [watermark] fotka '{k}' na webu není (překlep?)")
 
     css, js = (SRC / "style.css").read_bytes(), (SRC / "site.js").read_bytes()
     version = hashlib.md5(css + js).hexdigest()[:8]
     site = Site(cfg, albums, version)
+    site.wm_overlay = hero_only
     site.build()
 
     written: set[str] = set()
@@ -498,6 +700,8 @@ def build(clean: bool = False) -> None:
     for f in sorted((SRC / "fonts").iterdir()):
         put(f"assets/fonts/{f.name}", f.read_bytes())
     put(".nojekyll", "")
+    if hero_only:
+        put("assets/watermark.png", WATERMARK.overlay_png())
     if site.base:
         rows = "".join(
             f'<url><loc>{site.base}/{cs}</loc>'
