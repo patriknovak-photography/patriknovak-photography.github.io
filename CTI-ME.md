@@ -41,6 +41,8 @@ převede do sRGB a odstraní EXIF (včetně GPS).
 
 **Úvodní fotky:** v `site.toml` seznam `hero`. Zápis `"album/soubor.jpg | 70% 55%"` –
 procenta říkají, který bod fotky má zůstat vidět, když se na úzkém displeji ořízne.
+Volitelně druhé svislítko = výřez jen pro mobil: `"album/soubor.jpg | 50% 50% | 20% 50%"`
+(menší první číslo = výřez víc doleva).
 
 Po každé změně spusť `nahled.bat` (nebo `sestavit.bat`).
 

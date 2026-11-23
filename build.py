@@ -494,12 +494,14 @@ class Site:
         slides = []
         for i, ref in enumerate(cfg.get("hero", [])):
             name, _, focus = ref.partition("|")
+            focus, _, focus_m = focus.partition("|")  # volitelně 3. část: výřez na mobilu
             p = find_photo(self.albums, name)
             if not p:
                 if lang == "cs":
                     print(f"    ! úvodní fotka '{name.strip()}' nenalezena – vynecháno")
                 continue
-            pos = f' style="object-position:{esc(focus.strip())}"' if focus.strip() else ""
+            css = (f"--pos:{focus.strip()};" if focus.strip() else "") + (f"--pos-m:{focus_m.strip()};" if focus_m.strip() else "")
+            pos = f' style="{esc(css)}"' if css else ""
             sizes = "(orientation: portrait) 260vw, 100vw"
             if not slides:
                 img = (f'<img src="{{UP}}{p["url"]}-m.jpg" srcset="{self.srcset(p, ("m", "l"))}" sizes="{sizes}" '

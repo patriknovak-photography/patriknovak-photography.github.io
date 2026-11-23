@@ -19,12 +19,13 @@ protect_images = true
 
 # Fotografie, které se střídají na úvodní stránce.
 # Za svislítkem může být bod, který má zůstat vidět při ořezu (vodorovně svisle).
+# Druhé svislítko (nepovinné) = jiný výřez jen pro mobil, např. "… | 50% 50% | 20% 50%".
 hero = [
   "01-ticho/16_D72_8227.jpg | 60% 55%",
-  "01-ticho/20_D72_9933-Edit.jpg | 50% 50%",
-  "02-na-hrane-dne/11_D722935.jpg | 60% 50%",
+  "01-ticho/20_D72_9933-Edit.jpg | 50% 50% | 20% 50%",
+  "02-na-hrane-dne/11_D722935.jpg | 60% 50% | 56% 50%",
   "03-les/10_D72_6263-Pano-Edit-2.jpg | 40% 50%",
-  "03-les/27_D721954.jpg | 50% 50%",
+  "03-les/27_D721954.jpg | 50% 50% | 36% 50%",
   "02-na-hrane-dne/04_D72_1127-Edit.jpg | 70% 55%",
 ]
 
